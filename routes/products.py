@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from models import Product, UserInDB
 from database import fetch_product_data, add_product_to_ferremas_api, update_product_in_ferremas_api
-from auth import has_role # Importar la función has_role para control de acceso
+from auth import has_roles # Importar la función has_role para control de acceso
 
 router = APIRouter()
 
@@ -52,7 +52,7 @@ async def get_new_arrival_products():
     return new_arrival_products
 
 @router.post("/products", response_model=Product, status_code=status.HTTP_201_CREATED, summary="Agregar un nuevo producto al catálogo")
-async def add_product(product: Product, current_user: UserInDB = Depends(has_role(["admin", "mantenedor"]))):
+async def add_product(product: Product, current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))):
     """
     Permite a los usuarios con rol de 'admin' o 'mantenedor' agregar un nuevo producto al catálogo.
     """
@@ -62,7 +62,7 @@ async def add_product(product: Product, current_user: UserInDB = Depends(has_rol
     return created_product
 
 @router.put("/products/{product_id}/markPromotion", response_model=Product, summary="Marcar/desmarcar producto como promoción")
-async def mark_product_promotion(product_id: int, is_promotion: bool, current_user: UserInDB = Depends(has_role(["admin", "mantenedor"]))):
+async def mark_product_promotion(product_id: int, is_promotion: bool, current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))):
     """
     Permite a los usuarios con rol de 'admin' o 'mantenedor' marcar o desmarcar un producto como promoción.
     """
@@ -73,7 +73,7 @@ async def mark_product_promotion(product_id: int, is_promotion: bool, current_us
     return updated_product
 
 @router.put("/products/{product_id}/markNewArrival", response_model=Product, summary="Marcar/desmarcar producto como novedad")
-async def mark_product_new_arrival(product_id: int, is_new_arrival: bool, current_user: UserInDB = Depends(has_role(["admin", "mantenedor"]))):
+async def mark_product_new_arrival(product_id: int, is_new_arrival: bool, current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))):
     """
     Permite a los usuarios con rol de 'admin' o 'mantenedor' marcar o desmarcar un producto como novedad.
     """

@@ -1,14 +1,23 @@
 # ferremas_api/models.py
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import Optional, List
 
 class User(BaseModel):
     username: str
-    password: str
-    role: str
+    roles: List[str] # Asumiendo que quieres que los roles sean públicos
+    # Añade otros campos que quieras exponer del usuario (ej. email, full_name, etc.)
+    # Por ejemplo:
+    # email: Optional[str] = None
+    # full_name: Optional[str] = None
 
-class UserInDB(User):
+class UserInDB(User): # UserInDB hereda de User
     hashed_password: str
+
+# Modelos para la autenticación
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
 
 class Token(BaseModel):
     access_token: str
@@ -19,23 +28,25 @@ class TokenData(BaseModel):
     roles: List[str] = [] # Para manejar múltiples roles si fuera necesario
 
 class Product(BaseModel):
-    id: Optional[int] = None
+    id: int
     name: str
     description: Optional[str] = None
     price: float
-    model: Optional[str] = None
-    brand: Optional[str] = None
-    code: Optional[str] = None
     stock: int
     category: str
-    is_new_arrival: Optional[bool] = False
-    is_promotion: Optional[bool] = False
+    brand: str
+    is_promotion: bool = False
+    is_new_product: bool = False
+
 
 class Branch(BaseModel):
-    id: Optional[int] = None
+    id: int
     name: str
     address: str
+    city: str
     phone: str
+    latitude: float
+    longitude: float
 
 class Seller(BaseModel):
     id: Optional[int] = None

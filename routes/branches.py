@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List, Optional
 from models import Branch, Seller, UserInDB
 from database import fetch_branch_data, fetch_seller_data
-from auth import has_role
+from auth import has_roles
 
 router = APIRouter()
 
@@ -29,7 +29,7 @@ async def get_branch_by_id(branch_id: int):
     return branch[0] # fetch_branch_data devuelve una lista
 
 @router.get("/branches/{branch_id}/sellers", response_model=List[Seller], summary="Obtener listado de vendedores por sucursal")
-async def get_sellers_by_branch(branch_id: int, current_user: UserInDB = Depends(has_role(["admin", "jefe_tienda"]))):
+async def get_sellers_by_branch(branch_id: int, current_user: UserInDB = Depends(has_roles(["admin", "jefe_tienda"]))):
     """
     Recupera el listado de vendedores asignados a una sucursal específica.
     Requiere rol de 'admin' o 'jefe_tienda'.
@@ -41,7 +41,7 @@ async def get_sellers_by_branch(branch_id: int, current_user: UserInDB = Depends
     return sellers
 
 @router.get("/sellers/{seller_id}", response_model=Seller, summary="Obtener un vendedor identificable")
-async def get_seller_by_id(seller_id: int, current_user: UserInDB = Depends(has_role(["admin", "jefe_tienda", "bodega", "client"]))):
+async def get_seller_by_id(seller_id: int, current_user: UserInDB = Depends(has_roles(["admin", "jefe_tienda", "bodega", "client"]))):
     """
     Recupera los detalles de un vendedor específico por su ID.
     Accesible por admin, jefe_tienda, bodega y clientes.

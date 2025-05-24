@@ -5,7 +5,7 @@ from typing import List, Dict, Any
 import httpx # Para simular llamadas a Stripe y Banco Central de Chile
 from currency_converter import CurrencyConverter # Librería para conversión de divisas, si la usas
 
-from auth import authenticate_user, create_access_token, get_current_user, has_role
+from auth import authenticate_user, create_access_token, get_current_user, has_roles
 from models import Token, User, SingleOrder, ContactMessage, StripePayment, CurrencyConversion, Product, Branch, Seller
 from database import fetch_product_data, fetch_branch_data, fetch_seller_data
 from routes import products, branches # Importar los routers de rutas
@@ -53,12 +53,12 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
             headers={"WWW-Authenticate": "Bearer"},
         )
     # Incluir el rol en los datos del token
-    access_token = create_access_token(data={"sub": user.username, "roles": [user.role]})
+    access_token = create_access_token(data={"sub": user.username, "roles": [user.roles]})
     return {"access_token": access_token, "token_type": "bearer"}
 
 # --- Rutas de Pedidos ---
 @app.post("/api/v1/orders", status_code=status.HTTP_201_CREATED, summary="Colocar un pedido (monoproducto o multiproducto)")
-async def place_order(order: SingleOrder, current_user: User = Depends(has_role(["client"]))):
+async def place_order(order: SingleOrder, current_user: User = Depends(has_roles(["client"]))):
     """
     Permite a un cliente colocar un pedido de uno o varios productos.
     (Caso de uso: Como cliente, quiero poder realizar una compra) [cite: 65]
@@ -99,7 +99,7 @@ async def contact_seller(message: ContactMessage):
 
 # --- Integración con Stripe (Pasarela de Pagos) ---
 @app.post("/api/v1/payments/stripe", status_code=status.HTTP_200_OK, summary="Procesar pago con Stripe")
-async def process_stripe_payment(payment: StripePayment, current_user: User = Depends(has_role(["client", "service_account"]))):
+async def process_stripe_payment(payment: StripePayment, current_user: User = Depends(has_roles(["client", "service_account"]))):
     """
     Procesa un pago utilizando la API de Stripe.
     Se requiere un rol de 'client' o 'service_account'.
@@ -153,7 +153,7 @@ async def get_exchange_rate(from_currency: str, to_currency: str) -> Optional[fl
         return None # No se encontró la tasa de cambio
 
 @app.post("/api/v1/currencyConversion", response_model=CurrencyConversion, summary="Convertir divisas en tiempo real")
-async def convert_currency(conversion_request: CurrencyConversion, current_user: User = Depends(has_role(["client", "service_account"]))):
+async def convert_currency(conversion_request: CurrencyConversion, current_user: User = Depends(has_roles(["client", "service_account"]))):
     """
     Convierte una cantidad de una moneda a otra en tiempo real utilizando una API externa.
     Se requiere un rol de 'client' o 'service_account'.

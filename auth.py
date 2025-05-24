@@ -7,7 +7,8 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from config import settings
-from models import TokenData, UserInDB, User
+from models import TokenData, UserInDB
+from models import UserInDB 
 
 # Contexto para el hash de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -21,43 +22,43 @@ FAKE_USERS_DB = {
     "javier_thompson": {
         "username": "javier_thompson",
         "hashed_password": pwd_context.hash("a0NF4d6aNBIxRjlgjBRRzrS"),
-        "role": "admin",
+        "roles": ["admin"],
     },
     "ignacio_tapia": {
         "username": "ignacio_tapia",
         "hashed_password": pwd_context.hash("f7rWChmQS1JYfThT"),
-        "role": "client",
+        "roles": "client",
     },
     "stripe_sa": {
         "username": "stripe_sa",
         "hashed_password": pwd_context.hash("dzkQqDL9XZH33YDzhmsf"),
-        "role": "service_account",
+        "roles": "service_account",
     },
     # Añadir otros usuarios de roles si es necesario para pruebas
     "bodega_user": {
         "username": "bodega_user",
         "hashed_password": pwd_context.hash("bodega_password"),
-        "role": "bodega",
+        "roles": "bodega",
     },
     "mantenedor_user": {
         "username": "mantenedor_user",
         "hashed_password": pwd_context.hash("mantenedor_password"),
-        "role": "mantenedor",
+        "roles": "mantenedor",
     },
     "jefe_tienda_user": {
         "username": "jefe_tienda_user",
         "hashed_password": pwd_context.hash("jefetienda_password"),
-        "role": "jefe_tienda",
+        "roles": "jefe_tienda",
     },
 }
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
 
-def get_user(username: str) -> Optional[UserInDB]:
-    if username in FAKE_USERS_DB:
-        user_dict = FAKE_USERS_DB[username]
-        return UserInDB(**user_dict)
+def get_user(username: str):
+    user_dict = FAKE_USERS_DB.get(username)
+    if user_dict:
+        return UserInDB(**user_dict) 
     return None
 
 def authenticate_user(username: str, password: str) -> Optional[UserInDB]:
@@ -98,7 +99,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
         raise credentials_exception
     return user
 
-def has_role(required_roles: List[str]):
+def has_roles(required_roles: List[str]):
     def role_checker(current_user: UserInDB = Depends(get_current_user)):
         if not any(role in current_user.role for role in required_roles): # Simplificado para un solo rol, pero puede ser extendido
             raise HTTPException(
