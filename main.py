@@ -17,7 +17,9 @@ from fastapi import FastAPI
 
 from routes import products # This imports the products module
 
-app = FastAPI()
+app = FastAPI(
+    debug=True,
+)
 
 # ... other app configurations ...
 
