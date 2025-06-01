@@ -87,6 +87,3 @@ if __name__ == "__main__":
     # Solo activar reload en desarrollo local (no en producción)
     reload_flag = os.environ.get("ENV", "production") == "development"
 
-from config import settings
-print("FERREMAS_DB_API_URL:", settings.FERREMAS_DB_API_URL)
-print("SECRET_KEY:", settings.SECRET_KEY)
