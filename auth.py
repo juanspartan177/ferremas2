@@ -7,8 +7,7 @@ from jose import JWTError, jwt
 from passlib.context import CryptContext
 
 from config import settings
-from models import TokenData, UserInDB
-from models import UserInDB 
+from models import TokenData, UserInDB 
 
 # Contexto para el hash de contraseñas
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -27,28 +26,28 @@ FAKE_USERS_DB = {
     "ignacio_tapia": {
         "username": "ignacio_tapia",
         "hashed_password": pwd_context.hash("f7rWChmQS1JYfThT"),
-        "roles": "client",
+        "roles": ["client"],
     },
     "stripe_sa": {
         "username": "stripe_sa",
         "hashed_password": pwd_context.hash("dzkQqDL9XZH33YDzhmsf"),
-        "roles": "service_account",
+        "roles": ["service_account"],
     },
     # Añadir otros usuarios de roles si es necesario para pruebas
     "bodega_user": {
         "username": "bodega_user",
         "hashed_password": pwd_context.hash("bodega_password"),
-        "roles": "bodega",
+        "roles": ["bodega"],
     },
     "mantenedor_user": {
         "username": "mantenedor_user",
         "hashed_password": pwd_context.hash("mantenedor_password"),
-        "roles": "mantenedor",
+        "roles": ["mantenedor"],
     },
     "jefe_tienda_user": {
         "username": "jefe_tienda_user",
         "hashed_password": pwd_context.hash("jefetienda_password"),
-        "roles": "jefe_tienda",
+        "roles": ["jefe_tienda"],
     },
 }
 
@@ -75,7 +74,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         expire = datetime.utcnow() + expires_delta
     else:
         expire = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
+    to_encode.update({"exp": expire, "sub": data.get("sub")})
     encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
     return encoded_jwt
 
@@ -100,11 +99,11 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> UserInDB:
     return user
 
 def has_roles(required_roles: List[str]):
-    def role_checker(current_user: UserInDB = Depends(get_current_user)):
-        if not any(role in current_user.role for role in required_roles): # Simplificado para un solo rol, pero puede ser extendido
+    def roles_checker(current_user: UserInDB = Depends(get_current_user)):
+        if not any(roles in current_user.roles for roles in required_roles): # Simplificado para un solo rol, pero puede ser extendido
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No tienes los permisos necesarios para realizar esta acción"
             )
         return current_user
-    return role_checker
+    return roles_checker

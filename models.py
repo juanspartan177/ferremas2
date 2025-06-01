@@ -1,23 +1,18 @@
 # ferremas_api/models.py
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Optional, List
+
+# --- Modelos de usuario y autenticación ---
 
 class User(BaseModel):
     username: str
-    roles: List[str] # Asumiendo que quieres que los roles sean públicos
-    # Añade otros campos que quieras exponer del usuario (ej. email, full_name, etc.)
-    # Por ejemplo:
-    # email: Optional[str] = None
+    roles: List[str]  # Roles visibles (client, admin, etc.)
+    # Campos opcionales adicionales si se necesitan:
+    # email: Optional[EmailStr] = None
     # full_name: Optional[str] = None
 
-class UserInDB(User): # UserInDB hereda de User
+class UserInDB(User):
     hashed_password: str
-
-# Modelos para la autenticación
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
 
 class Token(BaseModel):
     access_token: str
@@ -25,7 +20,9 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
-    roles: List[str] = [] # Para manejar múltiples roles si fuera necesario
+    roles: List[str] = []
+
+# --- Modelos principales de negocio ---
 
 class Product(BaseModel):
     id: int
@@ -37,7 +34,6 @@ class Product(BaseModel):
     brand: str
     is_promotion: bool = False
     is_new_product: bool = False
-
 
 class Branch(BaseModel):
     id: int
@@ -51,15 +47,10 @@ class Branch(BaseModel):
 class Seller(BaseModel):
     id: Optional[int] = None
     name: str
-    email: str
+    email: EmailStr
     branch_id: int
 
-class ContactMessage(BaseModel):
-    client_name: str
-    client_email: str
-    subject: str
-    message: str
-    seller_id: Optional[int] = None
+# --- Modelos para pedidos y contacto ---
 
 class OrderItem(BaseModel):
     product_id: int
@@ -67,13 +58,22 @@ class OrderItem(BaseModel):
 
 class SingleOrder(BaseModel):
     client_username: str
-    items: List[OrderItem] # Lista para permitir monoproducto o multiproducto
+    items: List[OrderItem]
     branch_id: int
-    
+
+class ContactMessage(BaseModel):
+    client_name: str
+    client_email: EmailStr
+    subject: str
+    message: str
+    seller_id: Optional[int] = None
+
+# --- Modelos para integración externa ---
+
 class StripePayment(BaseModel):
     amount: float
     currency: str
-    payment_method_id: str # ID del método de pago de Stripe
+    payment_method_id: str
 
 class CurrencyConversion(BaseModel):
     amount: float

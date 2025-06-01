@@ -1,9 +1,13 @@
 # ferremas_api/routes/products.py
-from fastapi import APIRouter, Depends, HTTPException, status
-from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Path, Query
+from typing import List
 from models import Product, UserInDB
-from database import fetch_product_data, add_product_to_ferremas_api, update_product_in_ferremas_api
-from auth import has_roles # Importar la función has_role para control de acceso
+from database import (
+    fetch_product_data,
+    add_product_to_ferremas_api,
+    update_product_in_ferremas_api,
+)
+from auth import has_roles
 
 router = APIRouter()
 
@@ -14,18 +18,18 @@ async def get_products():
     """
     products = await fetch_product_data()
     if products is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo obtener el catálogo de productos")
+        raise HTTPException(status_code=500, detail="No se pudo obtener el catálogo de productos")
     return products
 
 @router.get("/products/{product_id}", response_model=Product, summary="Obtener un producto específico")
-async def get_product_by_id(product_id: int):
+async def get_product_by_id(product_id: int = Path(..., description="ID del producto")):
     """
     Recupera los detalles de un producto específico por su ID.
     """
     product = await fetch_product_data(product_id=product_id)
-    if not product: # fetch_product_data devuelve una lista, incluso si es un solo producto
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Producto no encontrado")
-    return product[0] # Retorna el primer elemento de la lista
+    if not product:
+        raise HTTPException(status_code=404, detail="Producto no encontrado")
+    return product[0]
 
 @router.get("/products/promotions", response_model=List[Product], summary="Obtener productos en promoción")
 async def get_promotion_products():
@@ -34,10 +38,9 @@ async def get_promotion_products():
     """
     all_products = await fetch_product_data()
     if all_products is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo obtener el catálogo de productos para promociones")
-    
-    promotion_products = [product for product in all_products if product.is_promotion]
-    return promotion_products
+        raise HTTPException(status_code=500, detail="No se pudo obtener el catálogo para promociones")
+
+    return [p for p in all_products if p.is_promotion]
 
 @router.get("/products/newArrivals", response_model=List[Product], summary="Obtener productos como novedades")
 async def get_new_arrival_products():
@@ -46,53 +49,47 @@ async def get_new_arrival_products():
     """
     all_products = await fetch_product_data()
     if all_products is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo obtener el catálogo de productos para novedades")
-    
-    new_arrival_products = [product for product in all_products if product.is_new_arrival]
-    return new_arrival_products
+        raise HTTPException(status_code=500, detail="No se pudo obtener el catálogo para novedades")
 
-@router.post("/products", response_model=Product, status_code=status.HTTP_201_CREATED, summary="Agregar un nuevo producto al catálogo")
-async def add_product(product: Product, current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))):
+    return [p for p in all_products if p.is_new_product]
+
+@router.post("/products", response_model=Product, status_code=201, summary="Agregar un nuevo producto al catálogo")
+async def add_product(
+    product: Product,
+    current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))
+):
     """
     Permite a los usuarios con rol de 'admin' o 'mantenedor' agregar un nuevo producto al catálogo.
     """
     created_product = await add_product_to_ferremas_api(product)
     if created_product is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo agregar el producto")
+        raise HTTPException(status_code=500, detail="No se pudo agregar el producto")
     return created_product
 
 @router.put("/products/{product_id}/markPromotion", response_model=Product, summary="Marcar/desmarcar producto como promoción")
-async def mark_product_promotion(product_id: int, is_promotion: bool, current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))):
+async def mark_product_promotion(
+    product_id: int = Path(..., description="ID del producto"),
+    is_promotion: bool = Query(..., description="Estado de promoción"),
+    current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))
+):
     """
-    Permite a los usuarios con rol de 'admin' o 'mantenedor' marcar o desmarcar un producto como promoción.
+    Marca o desmarca un producto como promoción.
     """
-    product_update = {"is_promotion": is_promotion}
-    updated_product = await update_product_in_ferremas_api(product_id, product_update)
-    if updated_product is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo actualizar el estado de promoción del producto")
-    return updated_product
+    updated = await update_product_in_ferremas_api(product_id, {"is_promotion": is_promotion})
+    if updated is None:
+        raise HTTPException(status_code=500, detail="No se pudo actualizar promoción")
+    return updated
 
 @router.put("/products/{product_id}/markNewArrival", response_model=Product, summary="Marcar/desmarcar producto como novedad")
-async def mark_product_new_arrival(product_id: int, is_new_arrival: bool, current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))):
+async def mark_product_new_arrival(
+    product_id: int = Path(..., description="ID del producto"),
+    is_new_product: bool = Query(..., description="Estado de novedad"),
+    current_user: UserInDB = Depends(has_roles(["admin", "mantenedor"]))
+):
     """
-    Permite a los usuarios con rol de 'admin' o 'mantenedor' marcar o desmarcar un producto como novedad.
+    Marca o desmarca un producto como novedad.
     """
-    product_update = {"is_new_arrival": is_new_arrival}
-    updated_product = await update_product_in_ferremas_api(product_id, product_update)
-    if updated_product is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo actualizar el estado de novedad del producto")
-    return updated_product
-# routes/products.py
-
-from fastapi import APIRouter
-
-# You MUST define an instance of APIRouter and name it 'router'
-# Or whatever name you are trying to import in main.py
-router = APIRouter()
-
-@router.get("/products/")
-async def read_products():
-    # Your logic for reading products
-    return {"message": "List of products"}
-
-# Add other product-related endpoints here using @router.post, @router.put, etc.
+    updated = await update_product_in_ferremas_api(product_id, {"is_new_product": is_new_product})
+    if updated is None:
+        raise HTTPException(status_code=500, detail="No se pudo actualizar novedad")
+    return updated
