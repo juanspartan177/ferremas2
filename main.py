@@ -71,5 +71,6 @@ async def get_seller(seller_id: int):
         return Seller(**data)
     return {}
 
-# También puedes agregar las funciones para POST y PUT si quieres
-
+@app.get("/")
+async def root():
+    return {"message": "API Ferremas funcionando correctamente"}
